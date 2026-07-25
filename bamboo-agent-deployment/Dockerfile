@@ -17,8 +17,8 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Custom capability, seeded into the agent home at deploy time by the Helm chart
-# (the agent home is a runtime volume). Baked here for the chart's init step.
-COPY capabilities/bamboo-capabilities.properties /tmp/extra-capabilities.properties
+# The custom capability (agent.role=ci) is seeded at deploy time by the Helm
+# chart's init container using the image's own /bamboo-update-capability.sh,
+# so nothing to bake here.
 
 USER bamboo

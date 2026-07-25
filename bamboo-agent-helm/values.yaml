@@ -5,11 +5,17 @@ image:
   pullPolicy: IfNotPresent
 
 bamboo:
-  # In-cluster service — no port-forward needed (agent runs inside the cluster).
+  # In-cluster service. The image entrypoint appends /agentServer automatically.
+  # No broker override is set: the agent runs in-cluster, so the broker URL the
+  # server advertises (bamboo-0.bamboo.ci.svc.cluster.local:54663) is reachable
+  # directly — unlike the off-cluster host agent, which needs a localhost
+  # override + port-forward.
   server: "http://bamboo.ci.svc.cluster.local:8085"
-  # Server's natively advertised broker FQDN; reachable in-cluster, so no
-  # localhost override / verifyHostName workaround (unlike the host agent).
-  brokerUrl: "ssl://bamboo-0.bamboo.ci.svc.cluster.local:54663"
+
+# Custom capability seeded into the agent at startup so CI/image-build plans
+# (requirement agent.role=ci) schedule here, and multipass plans do not.
+capabilities:
+  role: ci
 
 # Existing secret created by forge-lab's `make bamboo-secrets`.
 tokenSecret:

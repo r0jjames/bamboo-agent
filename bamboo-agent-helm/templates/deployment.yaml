@@ -1,0 +1,63 @@
+{{- if not .Values.image.tag }}
+{{- fail "image.tag is required — set it to the pushed git-sha (--set image.tag=<sha>)" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bamboo-agent
+  namespace: {{ .Values.rbac.namespace }}
+  labels:
+    {{- include "bamboo-agent.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "bamboo-agent.name" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "bamboo-agent.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: bamboo-agent
+      initContainers:
+        # Seed the custom capability into the agent home (a fresh emptyDir) before
+        # the agent starts, using the image's shipped helper, which writes
+        # $BAMBOO_AGENT_HOME/bin/bamboo-capabilities.properties. Runs as root so it
+        # can create the dir; the main container's entrypoint chowns the home tree
+        # to the agent user on startup.
+        - name: seed-capabilities
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+          command: ["/bamboo-update-capability.sh"]
+          args: ["agent.role", {{ .Values.capabilities.role | quote }}]
+          env:
+            - name: BAMBOO_AGENT_HOME
+              value: /var/atlassian/application-data/bamboo-agent
+          volumeMounts:
+            - name: agent-home
+              mountPath: /var/atlassian/application-data/bamboo-agent
+      containers:
+        - name: bamboo-agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            # Entrypoint appends /agentServer and registers the remote agent.
+            - name: BAMBOO_SERVER
+              value: {{ .Values.bamboo.server | quote }}
+            - name: SECURITY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tokenSecret.name }}
+                  key: {{ .Values.tokenSecret.key }}
+            - name: BAMBOO_AGENT_HOME
+              value: /var/atlassian/application-data/bamboo-agent
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: agent-home
+              mountPath: /var/atlassian/application-data/bamboo-agent
+      volumes:
+        - name: agent-home
+          emptyDir: {}
