@@ -1,0 +1,29 @@
+image:
+  repository: docker.io/rojcarranza/bamboo-agent
+  # Immutable git-sha; set at install time with --set image.tag=<sha>.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+bamboo:
+  # In-cluster service — no port-forward needed (agent runs inside the cluster).
+  server: "http://bamboo.ci.svc.cluster.local:8085"
+  # Server's natively advertised broker FQDN; reachable in-cluster, so no
+  # localhost override / verifyHostName workaround (unlike the host agent).
+  brokerUrl: "ssl://bamboo-0.bamboo.ci.svc.cluster.local:54663"
+
+# Existing secret created by forge-lab's `make bamboo-secrets`.
+tokenSecret:
+  name: bamboo-agent-token
+  key: security-token
+
+rbac:
+  # ns the agent may create kaniko Jobs in.
+  namespace: ci
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: 1Gi
+  limits:
+    cpu: "1"
+    memory: 2Gi
