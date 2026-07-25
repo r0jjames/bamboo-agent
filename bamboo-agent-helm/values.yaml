@@ -2,16 +2,22 @@ image:
   repository: docker.io/rojcarranza/bamboo-agent
   # Semver, matching bamboo-agent-deployment/VERSION. Bump both together to
   # release. Override at install with --set image.tag=<x.y.z>.
-  tag: "0.1.0"
+  tag: "0.1.1"
   pullPolicy: IfNotPresent
 
 bamboo:
-  # In-cluster service. The image entrypoint appends /agentServer automatically.
-  # No broker override is set: the agent runs in-cluster, so the broker URL the
-  # server advertises (bamboo-0.bamboo.ci.svc.cluster.local:54663) is reachable
-  # directly — unlike the off-cluster host agent, which needs a localhost
-  # override + port-forward.
-  server: "http://bamboo.ci.svc.cluster.local:8085"
+  # In-cluster Bamboo Service (port 80 -> pod 8085). The image entrypoint
+  # appends /agentServer automatically.
+  server: "http://bamboo.ci.svc.cluster.local"
+  # forge-lab tunes the server to advertise the broker as ssl://localhost:54663
+  # (for the host agent's port-forward). An in-cluster pod can't use that, so a
+  # socat sidecar forwards this pod's localhost:54663 to the real broker on the
+  # server pod. TLS stays end-to-end to the broker (raw TCP passthrough), and
+  # verifyHostName=false is already in the advertised URL. Non-invasive: no
+  # forge-lab or host-agent change.
+  broker:
+    host: "bamboo-0.bamboo.ci.svc.cluster.local"
+    port: 54663
 
 # Custom capability seeded into the agent at startup so CI/image-build plans
 # (requirement agent.role=ci) schedule here, and multipass plans do not.
@@ -29,7 +35,7 @@ rbac:
 
 resources:
   requests:
-    cpu: "500m"
+    cpu: "250m"
     memory: 1Gi
   limits:
     cpu: "1"

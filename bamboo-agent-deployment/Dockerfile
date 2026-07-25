@@ -9,7 +9,7 @@ USER root
 # `docker buildx` and the in-cluster kaniko build, on amd64 or arm64 nodes.
 ARG KUBECTL_VERSION=v1.30.5
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git jq maven ca-certificates curl \
+    && apt-get install -y --no-install-recommends git jq maven ca-certificates curl socat \
     && arch="$(dpkg --print-architecture)" \
     && curl -fsSL -o /usr/local/bin/kubectl \
         "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${arch}/kubectl" \

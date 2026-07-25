@@ -10,6 +10,10 @@ metadata:
     {{- include "bamboo-agent.labels" . | nindent 4 }}
 spec:
   replicas: 1
+  # Single-node lab: the node can't fit two agent pods plus Bamboo at once, so
+  # replace the old pod before starting the new one (no rolling surge).
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "bamboo-agent.name" . }}
@@ -39,6 +43,25 @@ spec:
             - name: agent-home
               mountPath: /var/atlassian/application-data/bamboo-agent
       containers:
+        # Forward this pod's localhost:54663 to the real broker on the server
+        # pod. The server advertises ssl://localhost:54663 to agents (a forge-lab
+        # choice for the host agent's port-forward); this makes that advertised
+        # URL resolve correctly from inside the cluster too. Raw TCP passthrough,
+        # so the agent's TLS session terminates at the broker, not here.
+        - name: broker-proxy
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["socat"]
+          args:
+            - "TCP-LISTEN:{{ .Values.bamboo.broker.port }},fork,reuseaddr"
+            - "TCP:{{ .Values.bamboo.broker.host }}:{{ .Values.bamboo.broker.port }}"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: 32Mi
+            limits:
+              cpu: "100m"
+              memory: 64Mi
         - name: bamboo-agent
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
