@@ -12,6 +12,13 @@ rules:
   - apiGroups: [""]
     resources: ["pods", "pods/log"]
     verbs: ["get", "list", "watch"]
+  # build-image.sh preflights that the Docker Hub push secret exists before it
+  # templates the kaniko Job. Scoped to that one secret (least privilege); the
+  # kaniko pod itself mounts it via the kubelet, which needs no SA permission.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["dockerhub-push"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
