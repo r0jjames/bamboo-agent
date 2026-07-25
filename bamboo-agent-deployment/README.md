@@ -18,9 +18,15 @@ The PAT never lands in git.
 
 ## Build
 
+The image tag is a semver read from the `VERSION` file (source of truth).
+
 ```bash
-scripts/build-image.sh          # pushes :<git-sha>, prints IMAGE_TAG=<sha>
+scripts/build-image.sh          # pushes :<VERSION>, prints IMAGE_TAG=<x.y.z>
+IMAGE_TAG=0.2.0 scripts/build-image.sh   # override the version ad hoc
 ```
+
+To cut a release: bump `VERSION`, bump `bamboo-agent-helm/values.yaml`
+`image.tag` to match, commit, push, then run the build.
 
 The build runs entirely in a throwaway kaniko Job in namespace `ci`; the shell
 that runs the script needs only `kubectl`. The commit being built must be

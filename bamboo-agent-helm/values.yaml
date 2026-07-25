@@ -1,7 +1,8 @@
 image:
   repository: docker.io/rojcarranza/bamboo-agent
-  # Immutable git-sha; set at install time with --set image.tag=<sha>.
-  tag: ""
+  # Semver, matching bamboo-agent-deployment/VERSION. Bump both together to
+  # release. Override at install with --set image.tag=<x.y.z>.
+  tag: "0.1.0"
   pullPolicy: IfNotPresent
 
 bamboo:

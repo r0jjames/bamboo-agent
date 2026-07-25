@@ -1,4 +1,7 @@
 # DL3008: pin apt versions — skipped; base image is already version-pinned and
 # this is a lab agent, not a released artifact.
+# DL3002: last USER root — intentional; the base entrypoint must start as root
+# to chown the agent home and drop privileges to the bamboo user itself.
 ignored:
   - DL3008
+  - DL3002

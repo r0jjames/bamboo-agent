@@ -21,4 +21,7 @@ RUN apt-get update \
 # chart's init container using the image's own /bamboo-update-capability.sh,
 # so nothing to bake here.
 
-USER bamboo
+# Deliberately do NOT set `USER bamboo`: the base entrypoint expects to start as
+# root, chown the agent home to the bamboo user (uid 2005), then drop privileges
+# itself. Pinning USER bamboo here skips that and the agent can't write bin/wrapper.
+USER root

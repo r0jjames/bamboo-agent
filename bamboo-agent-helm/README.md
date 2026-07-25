@@ -11,9 +11,12 @@ as a remote agent.
 
 ## Install
 
+`image.tag` defaults to the semver in `values.yaml` (kept in sync with
+`bamboo-agent-deployment/VERSION`). Override per install if needed:
+
 ```bash
 helm upgrade --install bamboo-agent ./bamboo-agent-helm -n ci \
-  --set image.tag=<git-sha>
+  --set image.tag=0.1.0
 ```
 
 Then approve the agent once: **Bamboo > Administration > Agents**.
