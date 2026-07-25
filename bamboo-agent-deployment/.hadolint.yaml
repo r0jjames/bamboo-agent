@@ -1,0 +1,4 @@
+# DL3008: pin apt versions — skipped; base image is already version-pinned and
+# this is a lab agent, not a released artifact.
+ignored:
+  - DL3008
