@@ -7,3 +7,5 @@ target/
 *.local
 # os
 .DS_Store
+# bamboo specs publish token
+.credentials

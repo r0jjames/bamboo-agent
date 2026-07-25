@@ -8,12 +8,17 @@ import com.atlassian.bamboo.specs.api.builders.plan.Stage;
 import com.atlassian.bamboo.specs.api.builders.plan.configuration.ConcurrentBuilds;
 import com.atlassian.bamboo.specs.api.builders.project.Project;
 import com.atlassian.bamboo.specs.api.builders.requirement.Requirement;
+import com.atlassian.bamboo.specs.builders.repository.git.GitRepository;
 import com.atlassian.bamboo.specs.builders.task.CheckoutItem;
 import com.atlassian.bamboo.specs.builders.task.ScriptTask;
 import com.atlassian.bamboo.specs.builders.task.VcsCheckoutTask;
+import com.atlassian.bamboo.specs.util.BambooServer;
 
 @BambooSpec
 public class BuildAgentImageSpec {
+
+    // Bamboo server reached over the `make ui` port-forward at publish time.
+    static final String BAMBOO_URL = "http://localhost:8085";
 
     Plan plan() {
         return new Plan(
@@ -21,6 +26,13 @@ public class BuildAgentImageSpec {
                 "Build Agent Image", new BambooKey("BUILD"))
             .description("Build + push the containerized Bamboo CI agent via kaniko")
             .pluginConfigurations(new ConcurrentBuilds().useSystemWideDefault(false))
+            // Plan-local repo: no pre-created linked repository needed. Public
+            // repo over https, so no credentials.
+            .planRepositories(
+                new GitRepository()
+                    .name("bamboo-agent")
+                    .url("https://github.com/r0jjames/bamboo-agent.git")
+                    .branch("main"))
             .stages(
                 new Stage("Validate").jobs(
                     new Job("Validate", new BambooKey("VAL"))
@@ -41,9 +53,7 @@ public class BuildAgentImageSpec {
     }
 
     public static void main(String[] args) {
-        // Published via `mvn compile exec:java` against a running server; the
-        // BambooServer URL is supplied at publish time (see repo README).
-        throw new UnsupportedOperationException(
-            "Publish with the forge-lab specs-publish pattern; plan() is unit-validated offline.");
+        BambooServer server = new BambooServer(BAMBOO_URL);
+        server.publish(new BuildAgentImageSpec().plan());
     }
 }
