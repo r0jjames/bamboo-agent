@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kaniko-build-__TAG__
+  namespace: ci
+  labels:
+    app: kaniko-build
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.23.2
+          args:
+            - "--context=__CONTEXT__"
+            - "--dockerfile=bamboo-agent-deployment/Dockerfile"
+            - "--destination=docker.io/rojcarranza/bamboo-agent:__TAG__"
+          volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: dockerhub-push
+            items:
+              - key: .dockerconfigjson
+                path: config.json
