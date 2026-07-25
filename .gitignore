@@ -1,0 +1,9 @@
+# maven
+target/
+# rendered manifests (may embed values); regenerate from templates
+*.rendered.yaml
+# local env
+.env
+*.local
+# os
+.DS_Store
