@@ -7,5 +7,8 @@ target/
 *.local
 # os
 .DS_Store
+# ide
+.idea/
+*.iml
 # bamboo specs publish token
 .credentials

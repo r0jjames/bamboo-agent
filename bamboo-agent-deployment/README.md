@@ -1,7 +1,13 @@
 # bamboo-agent-deployment
 
 Builds the CI/image-build agent image and pushes it to
-`docker.io/rojcarranza/bamboo-agent:<git-sha>` via a kaniko Job.
+`docker.io/rojcarranza/bamboo-agent:<semver>` via a kaniko Job.
+
+The Bamboo plan that runs this build (`AGENT-BUILD`) is defined in
+[forge-lab](https://github.com/r0jjames/forge-lab) —
+`bamboo-specs/src/main/java/lab/agent/BuildAgentImageSpec.java` — and published
+from there with `make specs-publish`. This module holds only the image sources
+and the build mechanics the plan invokes.
 
 ## One-time: Docker Hub push secret
 

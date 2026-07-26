@@ -41,8 +41,7 @@ bamboo-agent/
 │   ├── Dockerfile             # the agent image (FROM atlassian/bamboo-agent-base:12.1.8)
 │   ├── VERSION                # semver source of truth for the image tag
 │   ├── kaniko/                # kaniko Job template
-│   ├── scripts/build-image.sh # renders + runs the kaniko Job, waits, tails logs
-│   └── specs/                 # Bamboo Specs (Java) — the "Build Agent Image" plan
+│   └── scripts/build-image.sh # renders + runs the kaniko Job, waits, tails logs
 └── bamboo-agent-helm/         # "How is the agent deployed + registered?"
     ├── Chart.yaml, values.yaml
     └── templates/             # Deployment, RBAC, ServiceAccount, broker sidecar
@@ -62,9 +61,8 @@ They meet at exactly one contract: **the image tag** (`VERSION` ↔
 
 ```mermaid
 flowchart LR
-    A[git commit\nbamboo-agent repo] --> B[Bamboo plan\nAGENT-BUILD]
-    B --> C[Stage 1: Validate\nmvn test the specs]
-    C --> D[Stage 2: Build+Push\nbuild-image.sh]
+    A[git commit\nbamboo-agent repo] --> B[Bamboo plan\nAGENT-BUILD\ndefined in forge-lab]
+    B --> D[Stage: Build+Push\nbuild-image.sh]
     D --> E[kaniko Job\nin ns ci]
     E --> F[(Docker Hub\nrojcarranza/bamboo-agent:0.1.1)]
 ```
@@ -119,8 +117,8 @@ Files to read: `bamboo-agent-helm/templates/deployment.yaml`, `values.yaml`.
 | **Capability** | A fact the agent advertises (e.g. `agent.role=ci`). | initContainer, `bamboo-capabilities.properties` |
 | **Requirement** | A plan's demand that only agents with a matching capability run it. | `Requirement("agent.role")` in the spec |
 | **JMS broker** | ActiveMQ channel the server uses to dispatch builds to agents. | port 54663, the socat sidecar |
-| **Bamboo Specs** | Plans defined as Java code, unit-testable offline, published to the server. | `bamboo-agent-deployment/specs/` |
-| **RSS / publish** | Pushing a Specs-defined plan to the live server. | `publish.sh`, `.credentials` |
+| **Bamboo Specs** | Plans defined as Java code, unit-testable offline, published to the server. | forge-lab `bamboo-specs/` (`lab.agent.BuildAgentImageSpec`) |
+| **RSS / publish** | Pushing a Specs-defined plan to the live server. | forge-lab `make specs-publish`, `bamboo-specs/.credentials` |
 
 **Capability ↔ requirement** is the mechanism that keeps jobs on the right
 agent: the k8s agent advertises `agent.role=ci`; the `AGENT-BUILD` plan *requires*
@@ -210,8 +208,9 @@ helm upgrade --install bamboo-agent ./bamboo-agent-helm -n ci
 # 3. approve the agent once
 #    http://localhost:8085 -> Administration > Agents > Agent authentication > Approve
 
-# 4. publish the build pipeline into Bamboo (needs specs/.credentials: token=<PAT>)
-bamboo-agent-deployment/specs/publish.sh                # publishes plan AGENT-BUILD
+# 4. publish the build pipeline into Bamboo — from the forge-lab repo
+#    (needs forge-lab bamboo-specs/.credentials: token=<PAT>)
+cd ../forge-lab && make specs-publish                   # publishes AGENT-BUILD + the FORGE plans
 
 # 5. run the pipeline (or click Run in the UI). It builds the agent's own image.
 ```
@@ -240,8 +239,10 @@ To cut a new version: bump `bamboo-agent-deployment/VERSION` **and**
 4. **`bamboo-agent-deployment/Dockerfile`** — small; note the comments explaining
    `USER root` and the arch derivation (sections 7.1, 7.2).
 5. **`bamboo-agent-deployment/scripts/build-image.sh`** — the kaniko orchestration.
-6. **`bamboo-agent-deployment/specs/src/main/java/lab/agent/BuildAgentImageSpec.java`**
-   — plan-as-code: stages, capability requirement, plan-local repo, `main()` publish.
+6. **forge-lab `bamboo-specs/src/main/java/lab/agent/BuildAgentImageSpec.java`**
+   — plan-as-code: stage, capability requirement, plan-local repo, `main()`
+   publish. It lives in forge-lab because all lab pipelines do; this repo holds
+   only what the plan checks out and runs.
 7. **`bamboo-agent-helm/templates/deployment.yaml`** — initContainer, sidecar,
    token env, agent container. The comments explain each choice.
 8. **`bamboo-agent-helm/templates/rbac.yaml`** — least-privilege in practice.
